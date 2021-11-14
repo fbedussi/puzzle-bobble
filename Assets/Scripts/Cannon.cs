@@ -26,7 +26,7 @@ public class Cannon : MonoBehaviour
     void InitBubble()
     {
         currentBubble = Instantiate(Bubble);
-        currentBubble.transform.localPosition = new Vector3(0,-2,0);
+        currentBubble.transform.localPosition = this.transform.localPosition;
     }
 
     void Shoot()

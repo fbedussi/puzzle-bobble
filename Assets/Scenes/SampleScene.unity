@@ -684,5 +684,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   horizontalSpeed: 4
-  bullet: {fileID: 886631423461619110, guid: 703bb7a155a6444df90d52aa76542cc0, type: 3}
+  Bubble: {fileID: 3826049047982871694, guid: 703bb7a155a6444df90d52aa76542cc0, type: 3}
   bulletSpeed: 6
