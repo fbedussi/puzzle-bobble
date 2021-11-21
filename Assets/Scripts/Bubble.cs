@@ -69,11 +69,14 @@ public class Bubble : MonoBehaviour
         if (isStill == false)
         {
             isStill = true;
-            //_rigidbody.gravityScale = -1;
-            //GameManager.AddToGrid(this);
-            if (_renderer)
+            if (_rigidbody && _rigidbody.velocity!= Vector2.zero)
             {
-                GameManager.AddBubbleToGroup(this.gameObject.GetInstanceID(), collision.collider.gameObject.GetInstanceID(), _renderer.material.GetColor("_Color"));
+                //_rigidbody.gravityScale = -1;
+                GameManager.AddToGrid(this);
+                if (_renderer)
+                {
+                    GameManager.AddBubbleToGroup(this.gameObject.GetInstanceID(), collision.collider.gameObject.GetInstanceID(), _renderer.material.GetColor("_Color"));
+                }
             }
         }
     }
