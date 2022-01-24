@@ -36,6 +36,7 @@ public class Cannon : MonoBehaviour
     {       
         if (Input.GetMouseButtonDown(0))
         {
+            GameManager.SetIsPlaying();
             Vector3 velocity = new Vector3(transform.up.x * bulletSpeed, transform.up.y * bulletSpeed, 0);
             currentBubble.Launch(velocity);
             currentBubble = null;

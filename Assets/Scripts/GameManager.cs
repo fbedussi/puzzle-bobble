@@ -2,41 +2,51 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
+public class Group
+{
+    public Color color { set; get; }
+    public List<Bubble> bubbles { set; get; }
+
+    public Group(Color color, Bubble bubble)
+    {
+        this.color = color;
+        this.bubbles = new List<Bubble>() { bubble };
+    }
+
+    public void Add(Bubble bubble)
+    {
+        this.bubbles.Add(bubble);
+    }
+
+    public bool Contains(Bubble bubble)
+    {
+        return this.bubbles.Contains(bubble);
+    }
+}
+
+class Cell
+{
+    public Color color { set; get; }
+    public Bubble bubble { set; get; }
+    public float x { set; get; }
+    public float y { set; get; }
+
+    public Cell(Color color, Bubble bubble, float x, float y)
+    {
+        this.color = color;
+        this.bubble = bubble;
+        this.x = x;
+        this.y = y;
+    }
+
+    public void SetBubble(Bubble bubble)
+    {
+        this.bubble = bubble;
+    }
+}
+
 public class GameManager : MonoBehaviour
 {
-    public class Group
-    {
-        public Color color { set; get; }
-        public List<int> bubblesId { set; get; }
-
-        public Group(Color color, int bubbleId)
-        {
-            this.color = color;
-            this.bubblesId = new List<int>() { bubbleId };
-        }
-    }
-
-    class Cell
-    {
-        Color color { set; get; }
-        Bubble bubble { set; get; }
-        public float x { set;  get; }
-        public float y { set; get; }
-
-        public Cell(Color color, Bubble bubble, float x, float y)
-        {
-            this.color = color;
-            this.bubble = bubble;
-            this.x = x;
-            this.y = y;
-        }
-
-        public void SetBubble(Bubble bubble)
-        {
-            this.bubble = bubble;
-        }
-    }
-
     public static List<Group> groups = new List<Group>();
 
     public static int maxNumberOfBubblesInGroup = 3;
@@ -48,7 +58,7 @@ public class GameManager : MonoBehaviour
 
     static List<List<Cell>> bubbles { set; get; }
 
-    static bool isPlaying = false;
+    public static bool isPlaying = false;
 
     static float bubbleRadius = 1f;
     static float sqrt3 = Mathf.Sqrt(3);
@@ -88,65 +98,105 @@ public class GameManager : MonoBehaviour
     {
         Instance = this;
         InitGrid();
-        isPlaying = true;
+    }
+
+    public static void SetIsPlaying()
+    {
+        isPlaying = true;   
     }
 
     public static void AddToGrid(Bubble bubble)
     {
-        if (isPlaying)
+        foreach (List<Cell> row in bubbles)
         {
-            foreach (List<Cell> row in bubbles)
+            foreach (Cell cell in row)
             {
-                foreach (Cell cell in row)
+                if (Mathf.Abs(bubble.transform.position.x - cell.x) < (bubbleRadius/2) && Mathf.Abs(bubble.transform.position.y - cell.y) < (bubbleRadius /2))
                 {
-                    if (Mathf.Abs(bubble.transform.position.x - cell.x) < (bubbleRadius/2) && Mathf.Abs(bubble.transform.position.y - cell.y) < (bubbleRadius /2))
-                    {
-                        bubble.transform.position = new Vector2(cell.x, cell.y);
-                        cell.SetBubble(bubble);
-                    }
+                    bubble.transform.position = new Vector2(cell.x, cell.y);
+                    cell.SetBubble(bubble);
                 }
             }
-
         }
     }
 
-    public static void AddBubbleToGroup(int bubbleId, int collidingBubbleId, Color bubbleColor)
+    public static void CreateGroups(Group newGroupInput = null)
     {
-        Group existingGroup = null;
+        for (int rowIndex = 0; rowIndex < bubbles.Count; rowIndex++)
+        {
+            for (int colIndex = 0; colIndex < bubbles[rowIndex].Count; colIndex++)
+            {
+                Cell cell = bubbles[rowIndex][colIndex];
+                Color cellColor = cell.color;
+                Group newGroup = newGroupInput == null ? new Group(cellColor, cell.bubble) : newGroupInput;
+                if (newGroupInput == null)
+                {
+                    groups.Add(newGroup);
+                }
+
+                int[] siblingsIndexOnSameRow = { colIndex - 1, colIndex + 1 };
+                foreach (int index in siblingsIndexOnSameRow)
+                {
+                    if (index >= 0 && index < bubbles[rowIndex].Count && (bubbles[rowIndex][index].color == cellColor) && !newGroup.Contains(bubbles[rowIndex][index].bubble))
+                    {
+                        newGroup.Add(bubbles[rowIndex][index].bubble);
+                        CreateGroups(newGroup);
+                    }
+
+                }
+
+
+                //if (colIndex + 1 < bubbles[rowIndex].Count && (bubbles[rowIndex][colIndex + 1].color == cellColor) && !newGroup.Contains(bubbles[rowIndex][colIndex + 1].bubble))
+                //{
+                //    newGroup.Add(bubbles[rowIndex][colIndex - 1].bubble);
+                //    CheckGroups(newGroup);
+                //}
+
+                bool isEvenRow = (rowIndex + 1) % 2 == 0;
+                int siblingRowsPrevIndex = isEvenRow ? colIndex - 1 : colIndex;
+                int siblingRowsNexIndex = isEvenRow ? colIndex : colIndex + 1;
+
+                List<List<Cell>> siblingRows = new List<List<Cell>>();
+                if (rowIndex - 1 >= 0) {
+                    siblingRows.Add(bubbles[rowIndex - 1]);
+                }
+                if (rowIndex + 1 < bubbles.Count)
+                {
+                    siblingRows.Add(bubbles[rowIndex + 1]);
+                }
+                foreach (List<Cell> row in siblingRows)
+                {
+                    if (row != null)
+                    {
+                        int[] siblingsIndexOnRow = { siblingRowsPrevIndex, siblingRowsNexIndex };
+                        foreach (int index in siblingsIndexOnRow)
+                        {
+                            if (index >= 0 && index < row.Count && (row[index].color == cellColor) && !newGroup.Contains(row[index].bubble))
+                            {
+                                newGroup.Add(row[index].bubble);
+                                CreateGroups(newGroup);
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static void DeleteBubbles()
+    {
         foreach (Group group in groups)
         {
-            if (group.color == bubbleColor)
+            if (group.bubbles.Count >= maxNumberOfBubblesInGroup)
             {
-                foreach (int id in group.bubblesId)
+                foreach (Bubble bubble in group.bubbles)
                 {
-                    if (id == collidingBubbleId)
-                    {
-                        existingGroup = group;
-                        break;
-                    }
-                    if (existingGroup != null)
-                    {
-                        break;
-                    }
+                    Destroy(bubble);
                 }
             }
         }
-
-        if (existingGroup != null)
-        {
-                existingGroup.bubblesId.Add(bubbleId);
-            if (existingGroup.bubblesId.Count >= maxNumberOfBubblesInGroup)
-            {
-                foreach (int id in existingGroup.bubblesId)
-                {
-                    Object bubbleToDestroy = EditorUtility.InstanceIDToObject(id);
-                    Destroy(bubbleToDestroy);
-                }
-            }
-        } else
-        {
-            groups.Add(new Group(bubbleColor, bubbleId));
-        }
+        groups = new List<Group>();
     }
 
     void Update()
